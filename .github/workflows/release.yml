@@ -111,12 +111,17 @@ jobs:
             ARCHIVE_GOARCH=""
           fi
           ARCHIVE_NAME="consul-v${{ needs.set-product-version.outputs.product-version }}-${{ matrix.goos }}${ARCHIVE_GOARCH}.${ARCHIVE_EXTENSION}"
-          
+          BINARY_CHECKSUM_NAME="consul-v${{ needs.set-product-version.outputs.product-version }}-${{ matrix.goos }}${ARCHIVE_GOARCH}-checksum.txt"
+
           if [ "${{ matrix.goarch }}" == "arm64" ]; then
             export CC=aarch64-linux-gnu-gcc
           fi
 
           GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -ldflags="$GOLDFLAGS" -o ./out/$BINARY_NAME
+
+          # Calculate checksum for the binary
+          CHECKSUM_FILE="./out/${BINARY_CHECKSUM_NAME}"
+          shasum -a 256 ./out/$BINARY_NAME > $CHECKSUM_FILE
 
           if [ "${{ matrix.goos }}" == "windows" ]; then
             zip -j ./out/$ARCHIVE_NAME ./out/$BINARY_NAME
@@ -127,12 +132,6 @@ jobs:
           echo "output files : " && find ./out
 
           echo "archive_name=${ARCHIVE_NAME}"  >> $GITHUB_ENV
-
-      - name: Calculate SHA256
-        run: |
-          CHECKSUM_FILE="./out/${{ env.archive_name }}-checksum.txt"
-          shasum -a 256 ./out/${{ env.archive_name }} > $CHECKSUM_FILE
-        shell: bash
 
       - uses: actions/upload-artifact@v4
         with:
