@@ -130,12 +130,12 @@ jobs:
 
       - name: Calculate SHA256
         run: |
-          shasum -a 256 ./out/* > ./out/SHA256SUMS.txt
+          shasum -a 256 ./out/* > ./out/SHA256SUMS-${{ matrix.goos }}-${{ matrix.goarch }}.txt
         shell: bash
 
       - uses: actions/upload-artifact@v4
         with:
-          name: binaries-and-checksums
+          name: ${{ env.archive_name }}
           path: ./out/*
 
   create-release:
@@ -148,17 +148,17 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: binaries-and-checksums
+          name: ${{ env.archive_name }}
           path: artifacts
 
       - name: Generate Release Notes
         id: generate_release_notes
         run: |
           echo "## SHA256 Checksums" > release_notes.md
-          cat artifacts/SHA256SUMS.txt >> release_notes.md
+          find artifacts -name "SHA256SUMS-*.txt" -exec cat {} \; >> release_notes.md
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**
+          files: artifacts/**/*.*
           body_path: release_notes.md
